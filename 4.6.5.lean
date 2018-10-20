@@ -35,10 +35,8 @@ iff.intro
         end)
     (assume h : (∃ x, p x) ∧ r,
         show ∃ x, p x ∧ r, from
-        have hleft : ∃ x, p x, from h.left,
-        have hr : r, from h.right,
-        match hleft with ⟨w, (hw : p w)⟩ :=
-            ⟨w, ⟨hw, hr⟩⟩
+        match h.left with ⟨w, (hw : p w)⟩ :=
+            ⟨w, ⟨hw, h.right⟩⟩
         end)
 
 example : (∃ x, p x ∨ q x) ↔ (∃ x, p x) ∨ (∃ x, q x) :=
