@@ -64,6 +64,31 @@ iff.intro
 
 --
 
+-- refactor some lemmas for reuse {
+
+lemma not_exists_then_forall_not
+    {α : Type} {p : α → Prop} : (¬ ∃ x, p x) → (∀ x, ¬ p x) :=
+assume h : ¬ ∃ x, p x,
+    show ∀ x, ¬ p x, from
+    assume z : α,
+    show ¬ p z, from
+    (assume hpz : p z,
+        show false, from
+        h ⟨z, hpz⟩)
+
+lemma not_not_exists_then_forall
+    {α : Type} {p : α → Prop} : ¬ (∃ x, ¬ p x) → (∀ x, p x) :=
+assume h : ¬ (∃ x, ¬ p x),
+    show (∀ x, p x), from
+    assume z : α,
+    show p z, from
+    by_contradiction
+        (assume hnpz : ¬ p z,
+            show false, from
+            h ⟨z, hnpz⟩)
+
+-- }
+
 example : (∀ x, p x) ↔ ¬ (∃ x, ¬ p x) :=
 iff.intro
     (assume h : (∀ x, p x),
@@ -75,29 +100,95 @@ iff.intro
         end)
     (assume h : ¬ (∃ x, ¬ p x),
         show (∀ x, p x), from
-        assume z : α,
-        show p z, from
-        by_contradiction
-            (assume hnpz : ¬ p z,
-                show false, from
-                h ⟨z, hnpz⟩))
+        not_not_exists_then_forall h)
 
 example : (∃ x, p x) ↔ ¬ (∀ x, ¬ p x) :=
-sorry
+iff.intro
+    (assume h : ∃ x, p x,
+        show ¬ (∀ x, ¬ p x), from
+        match h with ⟨w, hw⟩ :=
+            assume hneg : ∀ x, ¬ p x,
+            show false, from
+            absurd hw (hneg w)
+        end)
+    (assume h : ¬ (∀ x, ¬ p x), -- ∀ x, ¬ p x → false
+        show ∃ x, p x, from
+        by_contradiction
+            (assume h_tofalsify : ¬ (∃ x, p x),
+                have h2 : ∀ x, ¬ p x, from not_exists_then_forall_not h_tofalsify,
+                absurd h2 h))
 
 example : (¬ ∃ x, p x) ↔ (∀ x, ¬ p x) :=
-sorry
+iff.intro
+    (assume h : ¬ ∃ x, p x,
+        show ∀ x, ¬ p x, from
+        not_exists_then_forall_not h)
+    (assume h : ∀ x, ¬ p x,
+        show ¬ ∃ x, p x, from
+        (assume h2 : ∃ x, p x,
+            show false, from
+            match h2 with ⟨w, hw⟩ :=
+                absurd hw (h w)
+            end))
 
-example : (¬ ∀ x, p x) ↔ (∃ x, ¬ p x) :=
-sorry
+theorem not_forall_iff_not_exists
+    {α : Type} {p : α → Prop} : (¬ ∀ x, p x) ↔ (∃ x, ¬ p x) :=
+iff.intro
+    (assume h : ¬ ∀ x, p x,
+        show ∃ x, ¬ p x, from
+        by_contradiction
+            (assume h_tofalsify : ¬ (∃ x, ¬ p x),
+                have h2 : ∀ x, p x, from not_not_exists_then_forall h_tofalsify,
+                absurd h2 h))
+    (assume h : ∃ x, ¬ p x,
+        show ¬ ∀ x, p x, from
+        match h with ⟨w, hw⟩ :=
+            assume hallp : ∀ x, p x,
+            show false, from
+            absurd (hallp w) hw
+        end)
 
 --
 
 example : (∀ x, p x → r) ↔ (∃ x, p x) → r :=
-sorry
+iff.intro
+    (assume h : (∀ x, p x → r),
+        show (∃ x, p x) → r, from
+        (assume h2 : ∃ x, p x,
+            show r, from
+            match h2 with ⟨w, (hw : p w)⟩ :=
+                (h w) hw
+            end))
+    (assume h : (∃ x, p x) → r,
+        show ∀ x, p x → r, from
+        assume z : α,
+        show p z → r, from
+            (assume hpz : p z,
+                show r, from
+                h ⟨z, hpz⟩))
 
 example : (∃ x, p x → r) ↔ (∀ x, p x) → r :=
-sorry
+iff.intro
+    (assume h : ∃ x, p x → r,
+        show (∀ x, p x) → r, from
+        match h with ⟨w, (hw : p w → r)⟩ :=
+            assume h2 : ∀ x, p x,
+            show r, from
+            hw (h2 w)
+        end)
+    (assume h : (∀ x, p x) → r,
+        show ∃ x, p x → r, from
+        by_cases
+            (assume h_all : ∀ x, p x,
+                ⟨a, (λ hpa, h h_all)⟩)
+            (assume h_nall : ¬ ∀ x, p x,
+                have h2 : ∃ x, ¬ p x, from not_forall_iff_not_exists.mp h_nall,
+                match h2 with ⟨w, hw⟩ :=
+                    ⟨w, (
+                        show p w → r, from
+                        (assume hpw : p w, absurd hpw hw)
+                    )⟩
+                end))
 
 example : (∃ x, r → p x) ↔ (r → ∃ x, p x) :=
 sorry
