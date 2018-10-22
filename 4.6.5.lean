@@ -191,7 +191,24 @@ iff.intro
                 end))
 
 example : (∃ x, r → p x) ↔ (r → ∃ x, p x) :=
-sorry
+iff.intro
+    (assume h : (∃ x, r → p x),
+        show (r → ∃ x, p x), from
+        match h with ⟨w, (hw : r → p w)⟩ :=
+            assume hr : r,
+            show ∃ x, p x, from
+            ⟨w, hw hr⟩
+        end)
+    (assume h : (r → ∃ x, p x),
+        show (∃ x, r → p x), from
+        by_cases
+            (assume hr : r,
+                have h2 : ∃ x, p x, from h hr,
+                match h2 with ⟨w, (hw : p w)⟩ :=
+                    ⟨w, (λ _, hw)⟩
+                end)
+            (assume hnr : ¬r,
+                ⟨a, (λ hr, absurd hr hnr)⟩))
 
 --
 
